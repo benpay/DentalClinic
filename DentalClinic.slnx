@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".dockerignore" />
+    <File Path=".env" />
+    <File Path=".env.example" />
+    <File Path="compose.yaml" />
+    <File Path="Dockerfile" />
+  </Folder>
+  <Project Path="DentalClinic.Appointments.Api/DentalClinic.Appointments.Api.csproj" Id="f8bdeefd-f8a9-4b6b-b03f-2d0f1919aa5c" />
+  <Project Path="DentalClinic.Appointments.Application/DentalClinic.Appointments.Application.csproj" Id="6055e0a8-bfac-49a6-96fb-1769d65828e0" />
+  <Project Path="DentalClinic.Appointments.Domain/DentalClinic.Appointments.Domain.csproj" />
+  <Project Path="DentalClinic.Appointments.Infrastructure/DentalClinic.Appointments.Infrastructure.csproj" Id="3b311ad1-dc2e-4e93-acea-7621f0d60575" />
+  <Project Path="DentalClinic.Appointments.IntegrationTests/DentalClinic.Appointments.IntegrationTests.csproj" Id="42679967-3009-431e-854d-f02261b7390a" />
+  <Project Path="DentalClinic.Appointments.UnitTests/DentalClinic.Appointments.UnitTests.csproj" Id="c1174609-99d5-40c0-9ea6-54f9254a3edf" />
+</Solution>

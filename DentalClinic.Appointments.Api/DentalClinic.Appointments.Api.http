@@ -1,0 +1,25 @@
+@apiUrl = http://localhost:5110
+
+### Create a new Appointment
+POST {{apiUrl}}/api/appointments
+Content-Type: application/json
+{
+  "patientId": "a4c4fcce-4c91-4b70-a1f5-ef7f9b3e50a1",
+  "dentistId": "b6e5d526-9f5e-48f9-9d6d-6b456e35fe45",
+  "startsAt": "2026-10-01T09:00:00+00:00",
+  "endsAt": "2026-10-01T09:30:00+00:00"
+}
+
+### Get an existing Appointment
+GET {{apiUrl}}/api/appointments/f136e81c-9186-4b5b-8bd1-05ef86ee13dd
+
+### Update an existing Appointment
+PUT {{apiUrl}}/api/appointments/f136e81c-9186-4b5b-8bd1-05ef86ee13dd/reschedule
+Content-Type: application/json
+{
+  "startsAt": "2026-10-01T12:00:00+00:00",
+  "endsAt": "2026-10-01T12:30:00+00:00"
+}
+
+### Delete an existing Appointment
+DELETE {{apiUrl}}/api/appointments/f136e81c-9186-4b5b-8bd1-05ef86ee13dd
