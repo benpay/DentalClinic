@@ -4,14 +4,13 @@ using DentalClinic.Appointments.Application.Features.Appointments;
 using DentalClinic.Appointments.Application.Features.Appointments.Commands.CancelAppointment;
 using DentalClinic.Appointments.Application.Features.Appointments.IntegrationEvents;
 using DentalClinic.Appointments.Domain.Appointments;
-using FluentValidation;
 
 namespace DentalClinic.Appointments.UnitTests.Features.Appointments.Commands.CancelAppointment;
 
 public sealed class CancelAppointmentCommandHandlerTests
 {
     [Fact]
-    public async Task HandleAsync_WithExistingAppointment_CancelsIt()
+    public async Task Handle_WithExistingAppointment_CancelsIt()
     {
         var repository = new FakeAppointmentWriteRepository();
         var appointment = CreateAppointment();
@@ -21,12 +20,12 @@ public sealed class CancelAppointmentCommandHandlerTests
 
         var handler = new CancelAppointmentCommandHandler(
             repository,
-            new CancelAppointmentCommandValidator(),
             outbox,
             unitOfWork);
 
-        var appointmentId = await handler.HandleAsync(
-            new CancelAppointmentCommand(appointment.Id));
+        var appointmentId = await handler.Handle(
+            new CancelAppointmentCommand(appointment.Id),
+            CancellationToken.None);
         var integrationEvent = Assert.IsType<AppointmentCancelledIntegrationEvent>(
             Assert.Single(outbox.Events));
 
@@ -38,35 +37,18 @@ public sealed class CancelAppointmentCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithEmptyAppointmentId_ThrowsValidationException()
+    public async Task Handle_WhenAppointmentDoesNotExist_ThrowsNotFoundException()
     {
         var repository = new FakeAppointmentWriteRepository();
         var handler = new CancelAppointmentCommandHandler(
             repository,
-            new CancelAppointmentCommandValidator(),
-            new FakeOutbox(),
-            new FakeUnitOfWork());
-
-        await Assert.ThrowsAsync<ValidationException>(
-            async () => await handler.HandleAsync(
-                new CancelAppointmentCommand(Guid.Empty)));
-
-        Assert.False(repository.UpdateWasCalled);
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenAppointmentDoesNotExist_ThrowsNotFoundException()
-    {
-        var repository = new FakeAppointmentWriteRepository();
-        var handler = new CancelAppointmentCommandHandler(
-            repository,
-            new CancelAppointmentCommandValidator(),
             new FakeOutbox(),
             new FakeUnitOfWork());
 
         await Assert.ThrowsAsync<AppointmentNotFoundException>(
-            async () => await handler.HandleAsync(
-                new CancelAppointmentCommand(Guid.NewGuid())));
+            async () => await handler.Handle(
+                new CancelAppointmentCommand(Guid.NewGuid()),
+                CancellationToken.None));
     }
 
     private static Appointment CreateAppointment()

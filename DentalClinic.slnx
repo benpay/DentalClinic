@@ -11,5 +11,7 @@
   <Project Path="DentalClinic.Appointments.Domain/DentalClinic.Appointments.Domain.csproj" />
   <Project Path="DentalClinic.Appointments.Infrastructure/DentalClinic.Appointments.Infrastructure.csproj" Id="3b311ad1-dc2e-4e93-acea-7621f0d60575" />
   <Project Path="DentalClinic.Appointments.IntegrationTests/DentalClinic.Appointments.IntegrationTests.csproj" Id="42679967-3009-431e-854d-f02261b7390a" />
+  <Project Path="DentalClinic.Appointments.Projections.Worker/DentalClinic.Appointments.Projections.Worker.csproj" />
+  <Project Path="DentalClinic.Appointments.ReadModel/DentalClinic.Appointments.ReadModel.csproj" />
   <Project Path="DentalClinic.Appointments.UnitTests/DentalClinic.Appointments.UnitTests.csproj" Id="c1174609-99d5-40c0-9ea6-54f9254a3edf" />
 </Solution>

@@ -1,10 +1,11 @@
 ﻿using DentalClinic.Appointments.Application.Abstractions.Messaging;
 using DentalClinic.Appointments.Application.Abstractions.Persistence;
+using MediatR;
 
 namespace DentalClinic.Appointments.Application.Features.Appointments.Queries.GetAppointmentById;
 
 public sealed class GetAppointmentByIdQueryHandler
-    : IQueryHandler<GetAppointmentByIdQuery, AppointmentDetails?>
+    : IRequestHandler<GetAppointmentByIdQuery, AppointmentDetails?>
 {
     private readonly IAppointmentReadRepository _appointmentReadRepository;
 
@@ -14,12 +15,12 @@ public sealed class GetAppointmentByIdQueryHandler
         _appointmentReadRepository = appointmentReadRepository;
     }
 
-    public Task<AppointmentDetails?> HandleAsync(
-        GetAppointmentByIdQuery query,
-        CancellationToken cancellationToken = default)
+    public Task<AppointmentDetails?> Handle(
+        GetAppointmentByIdQuery request,
+        CancellationToken cancellationToken)
     {
         return _appointmentReadRepository.GetByIdAsync(
-            query.AppointmentId,
+            request.AppointmentId,
             cancellationToken);
     }
 }

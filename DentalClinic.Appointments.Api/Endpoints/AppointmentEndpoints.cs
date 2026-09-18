@@ -1,11 +1,11 @@
 using DentalClinic.Appointments.Api.Contracts.Appointments;
-using DentalClinic.Appointments.Application.Abstractions.Messaging;
 using DentalClinic.Appointments.Application.Features.Appointments;
 using DentalClinic.Appointments.Application.Features.Appointments.Commands.CancelAppointment;
 using DentalClinic.Appointments.Application.Features.Appointments.Commands.RescheduleAppointment;
 using DentalClinic.Appointments.Application.Features.Appointments.Commands.ScheduleAppointment;
 using DentalClinic.Appointments.Application.Features.Appointments.Queries.GetAppointmentById;
 using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -29,7 +29,7 @@ public static class AppointmentEndpoints
 
     private static async Task<IResult> CreateAppointmentAsync(
         ScheduleAppointmentRequest request,
-        ICommandHandler<ScheduleAppointmentCommand, Guid> handler,
+        ISender sender,
         CancellationToken cancellationToken)
     {
         var command = new ScheduleAppointmentCommand(
@@ -40,7 +40,7 @@ public static class AppointmentEndpoints
 
         try
         {
-            var appointmentId = await handler.HandleAsync(
+            var appointmentId = await sender.Send(
                 command,
                 cancellationToken);
 
@@ -57,7 +57,7 @@ public static class AppointmentEndpoints
     private static async Task<IResult> RescheduleAppointmentAsync(
         Guid appointmentId,
         RescheduleAppointmentRequest request,
-        ICommandHandler<RescheduleAppointmentCommand, Guid> handler,
+        ISender sender,
         CancellationToken cancellationToken)
     {
         var command = new RescheduleAppointmentCommand(
@@ -67,7 +67,7 @@ public static class AppointmentEndpoints
 
         try
         {
-            await handler.HandleAsync(command, cancellationToken);
+            await sender.Send(command, cancellationToken);
 
             return Results.NoContent();
         }
@@ -83,12 +83,12 @@ public static class AppointmentEndpoints
 
     private static async Task<IResult> CancelAppointmentAsync(
         Guid appointmentId,
-        ICommandHandler<CancelAppointmentCommand, Guid> handler,
+        ISender sender,
         CancellationToken cancellationToken)
     {
         try
         {
-            await handler.HandleAsync(
+            await sender.Send(
                 new CancelAppointmentCommand(appointmentId),
                 cancellationToken);
 
@@ -106,10 +106,10 @@ public static class AppointmentEndpoints
 
     private static async Task<IResult> GetAppointmentByIdAsync(
         Guid appointmentId,
-        IQueryHandler<GetAppointmentByIdQuery, AppointmentDetails?> handler,
+        ISender sender,
         CancellationToken cancellationToken)
     {
-        var appointment = await handler.HandleAsync(
+        var appointment = await sender.Send(
             new GetAppointmentByIdQuery(appointmentId),
             cancellationToken);
 

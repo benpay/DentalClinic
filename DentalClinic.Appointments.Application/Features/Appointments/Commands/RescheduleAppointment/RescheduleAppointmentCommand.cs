@@ -5,4 +5,4 @@ namespace DentalClinic.Appointments.Application.Features.Appointments.Commands.R
 public sealed record RescheduleAppointmentCommand(
     Guid AppointmentId,
     DateTimeOffset StartsAt,
-    DateTimeOffset EndsAt) : ICommand;
+    DateTimeOffset EndsAt) : ICommand<Guid>;

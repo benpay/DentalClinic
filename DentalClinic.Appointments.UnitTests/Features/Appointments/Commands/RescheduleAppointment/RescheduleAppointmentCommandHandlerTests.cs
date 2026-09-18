@@ -4,14 +4,13 @@ using DentalClinic.Appointments.Application.Features.Appointments;
 using DentalClinic.Appointments.Application.Features.Appointments.Commands.RescheduleAppointment;
 using DentalClinic.Appointments.Application.Features.Appointments.IntegrationEvents;
 using DentalClinic.Appointments.Domain.Appointments;
-using FluentValidation;
 
 namespace DentalClinic.Appointments.UnitTests.Features.Appointments.Commands.RescheduleAppointment;
 
 public sealed class RescheduleAppointmentCommandHandlerTests
 {
     [Fact]
-    public async Task HandleAsync_WithExistingCancelledAppointment_ReschedulesIt()
+    public async Task Handle_WithExistingCancelledAppointment_ReschedulesIt()
     {
         var repository = new FakeAppointmentWriteRepository();
         var appointment = CreateAppointment();
@@ -22,7 +21,6 @@ public sealed class RescheduleAppointmentCommandHandlerTests
 
         var handler = new RescheduleAppointmentCommandHandler(
             repository,
-            new RescheduleAppointmentCommandValidator(),
             outbox,
             unitOfWork);
 
@@ -34,7 +32,9 @@ public sealed class RescheduleAppointmentCommandHandlerTests
             newStartsAt,
             newEndsAt);
 
-        var appointmentId = await handler.HandleAsync(command);
+        var appointmentId = await handler.Handle(
+            command,
+            CancellationToken.None);
         var integrationEvent = Assert.IsType<AppointmentRescheduledIntegrationEvent>(
             Assert.Single(outbox.Events));
 
@@ -50,35 +50,11 @@ public sealed class RescheduleAppointmentCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithInvalidTimes_ThrowsValidationException()
+    public async Task Handle_WhenAppointmentDoesNotExist_ThrowsNotFoundException()
     {
         var repository = new FakeAppointmentWriteRepository();
         var handler = new RescheduleAppointmentCommandHandler(
             repository,
-            new RescheduleAppointmentCommandValidator(),
-            new FakeOutbox(),
-            new FakeUnitOfWork());
-
-        var startsAt = new DateTimeOffset(2026, 10, 2, 10, 0, 0, TimeSpan.Zero);
-
-        var command = new RescheduleAppointmentCommand(
-            Guid.NewGuid(),
-            startsAt,
-            startsAt);
-
-        await Assert.ThrowsAsync<ValidationException>(
-            async () => await handler.HandleAsync(command));
-
-        Assert.False(repository.UpdateWasCalled);
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenAppointmentDoesNotExist_ThrowsNotFoundException()
-    {
-        var repository = new FakeAppointmentWriteRepository();
-        var handler = new RescheduleAppointmentCommandHandler(
-            repository,
-            new RescheduleAppointmentCommandValidator(),
             new FakeOutbox(),
             new FakeUnitOfWork());
 
@@ -88,7 +64,9 @@ public sealed class RescheduleAppointmentCommandHandlerTests
             new DateTimeOffset(2026, 10, 2, 10, 30, 0, TimeSpan.Zero));
 
         await Assert.ThrowsAsync<AppointmentNotFoundException>(
-            async () => await handler.HandleAsync(command));
+            async () => await handler.Handle(
+                command,
+                CancellationToken.None));
     }
 
     private static Appointment CreateAppointment()

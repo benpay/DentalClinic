@@ -36,6 +36,14 @@ public sealed class AppointmentTests
     }
 
     [Fact]
+    public void Create_GeneratesNonEmptyId()
+    {
+        var appointment = CreateAppointment();
+
+        Assert.NotEqual(Guid.Empty, appointment.Id);
+    }
+
+    [Fact]
     public void Cancel_ChangesStatusToCancelled()
     {
         var appointment = CreateAppointment();
@@ -59,6 +67,17 @@ public sealed class AppointmentTests
         Assert.Equal(AppointmentStatus.Scheduled, appointment.Status);
         Assert.Equal(newStartsAt, appointment.StartsAt);
         Assert.Equal(newEndsAt, appointment.EndsAt);
+    }
+
+    [Fact]
+    public void Reschedule_WhenEndTimeIsNotLaterThanStartTime_ThrowsException()
+    {
+        var appointment = CreateAppointment();
+
+        var startsAt = new DateTimeOffset(2026, 10, 2, 10, 0, 0, TimeSpan.Zero);
+
+        Assert.Throws<ArgumentException>(
+            () => appointment.Reschedule(startsAt, startsAt));
     }
 
     private static Appointment CreateAppointment()

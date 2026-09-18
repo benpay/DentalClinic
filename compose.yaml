@@ -1,4 +1,20 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dental}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dental}
+      POSTGRES_DB: ${POSTGRES_DB:-dental_read}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dental} -d ${POSTGRES_DB:-dental_read}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   appointments-api:
     build:
       context: .
@@ -9,3 +25,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       AzureServiceBus__ConnectionString: ${AZURE_SERVICE_BUS_CONNECTION_STRING}
       AzureServiceBus__TopicName: appointment-events
+      ConnectionStrings__ReadDatabase: Host=postgres;Database=dental_read;Username=dental;Password=dental
+
+volumes:
+  postgres_data:

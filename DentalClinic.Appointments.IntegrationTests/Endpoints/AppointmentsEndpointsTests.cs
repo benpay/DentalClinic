@@ -1,5 +1,10 @@
 ﻿using DentalClinic.Appointments.Api.Contracts.Appointments;
 using DentalClinic.Appointments.Domain.Appointments;
+using DentalClinic.Appointments.Infrastructure.Persistence;
+using DentalClinic.Appointments.ReadModel.AppointmentProjectors;
+using DentalClinic.Appointments.ReadModel.IntegrationEvents;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -9,10 +14,12 @@ namespace DentalClinic.Appointments.IntegrationTests.Endpoints;
 public sealed class AppointmentsEndpointsTests
     : IClassFixture<ApiFactory>
 {
+    private readonly ApiFactory _factory;
     private readonly HttpClient _client;
 
     public AppointmentsEndpointsTests(ApiFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
@@ -34,6 +41,8 @@ public sealed class AppointmentsEndpointsTests
 
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         Assert.NotNull(createResponse.Headers.Location);
+
+        await ApplyPendingProjectionsAsync(_factory);
 
         var getResponse = await _client.GetAsync(
             createResponse.Headers.Location!);
@@ -79,6 +88,8 @@ public sealed class AppointmentsEndpointsTests
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         Assert.NotNull(createResponse.Headers.Location);
 
+        await ApplyPendingProjectionsAsync(_factory);
+
         var newStartsAt = new DateTimeOffset(2026, 10, 2, 10, 0, 0, TimeSpan.Zero);
         var newEndsAt = new DateTimeOffset(2026, 10, 2, 10, 30, 0, TimeSpan.Zero);
 
@@ -91,6 +102,8 @@ public sealed class AppointmentsEndpointsTests
             rescheduleRequest);
 
         Assert.Equal(HttpStatusCode.NoContent, rescheduleResponse.StatusCode);
+
+        await ApplyPendingProjectionsAsync(_factory);
 
         var getResponse = await _client.GetAsync(
             createResponse.Headers.Location!);
@@ -127,10 +140,14 @@ public sealed class AppointmentsEndpointsTests
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         Assert.NotNull(createResponse.Headers.Location);
 
+        await ApplyPendingProjectionsAsync(_factory);
+
         var cancelResponse = await _client.DeleteAsync(
             createResponse.Headers.Location!);
 
         Assert.Equal(HttpStatusCode.NoContent, cancelResponse.StatusCode);
+
+        await ApplyPendingProjectionsAsync(_factory);
 
         var getResponse = await _client.GetAsync(
             createResponse.Headers.Location!);
@@ -145,5 +162,35 @@ public sealed class AppointmentsEndpointsTests
             .GetInt32();
 
         Assert.Equal((int)AppointmentStatus.Cancelled, status);
+    }
+
+    private static async Task ApplyPendingProjectionsAsync(ApiFactory factory)
+    {
+        using var scope = factory.Services.CreateScope();
+
+        var writeDbContext = scope.ServiceProvider
+            .GetRequiredService<AppointmentsDbContext>();
+
+        var dispatcher = new IntegrationEventDispatcher();
+
+        var projector = scope.ServiceProvider
+            .GetRequiredService<IAppointmentProjector>();
+
+        var pendingMessages = await writeDbContext.OutboxMessages
+            .Where(message => message.ProcessedOnUtc == null)
+            .ToListAsync();
+
+        foreach (var message in pendingMessages)
+        {
+            var integrationEvent = dispatcher.Deserialize(
+                message.Type,
+                message.Content);
+
+            await projector.ProjectAsync(integrationEvent);
+
+            message.MarkAsProcessed(DateTimeOffset.UtcNow);
+        }
+
+        await writeDbContext.SaveChangesAsync();
     }
 }

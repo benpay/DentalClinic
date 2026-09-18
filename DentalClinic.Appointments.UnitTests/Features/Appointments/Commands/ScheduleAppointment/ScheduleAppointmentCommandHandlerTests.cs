@@ -3,14 +3,13 @@ using DentalClinic.Appointments.Application.Abstractions.Persistence;
 using DentalClinic.Appointments.Application.Features.Appointments.Commands.ScheduleAppointment;
 using DentalClinic.Appointments.Application.Features.Appointments.IntegrationEvents;
 using DentalClinic.Appointments.Domain.Appointments;
-using FluentValidation;
 
 namespace DentalClinic.Appointments.UnitTests.Features.Appointments.Commands.ScheduleAppointment;
 
 public sealed class ScheduleAppointmentCommandHandlerTests
 {
     [Fact]
-    public async Task HandleAsync_WithValidCommand_SavesAppointmentAndAddsOutboxEvent()
+    public async Task Handle_WithValidCommand_SavesAppointmentAndAddsOutboxEvent()
     {
         var repository = new FakeAppointmentWriteRepository();
         var outbox = new FakeOutbox();
@@ -18,7 +17,6 @@ public sealed class ScheduleAppointmentCommandHandlerTests
 
         var handler = new ScheduleAppointmentCommandHandler(
             repository,
-            new ScheduleAppointmentCommandValidator(),
             outbox,
             unitOfWork);
 
@@ -33,7 +31,9 @@ public sealed class ScheduleAppointmentCommandHandlerTests
             startsAt,
             endsAt);
 
-        var appointmentId = await handler.HandleAsync(command);
+        var appointmentId = await handler.Handle(
+            command,
+            CancellationToken.None);
 
         Assert.Single(repository.Appointments);
 
@@ -51,33 +51,14 @@ public sealed class ScheduleAppointmentCommandHandlerTests
         var integrationEvent = Assert.IsType<AppointmentScheduledIntegrationEvent>(
             outbox.Events[0]);
 
+        Assert.NotEqual(Guid.Empty, integrationEvent.EventId);
         Assert.Equal(appointmentId, integrationEvent.AppointmentId);
         Assert.Equal(patientId, integrationEvent.PatientId);
         Assert.Equal(dentistId, integrationEvent.DentistId);
+        Assert.Equal(startsAt, integrationEvent.StartsAt);
+        Assert.Equal(endsAt, integrationEvent.EndsAt);
 
         Assert.True(unitOfWork.SaveChangesWasCalled);
-    }
-
-    [Fact]
-    public async Task HandleAsync_WithInvalidCommand_ThrowsValidationExceptionAndDoesNotSave()
-    {
-        var repository = new FakeAppointmentWriteRepository();
-        var handler = new ScheduleAppointmentCommandHandler(
-            repository,
-            new ScheduleAppointmentCommandValidator(),
-            new FakeOutbox(),
-            new FakeUnitOfWork());
-
-        var invalidCommand = new ScheduleAppointmentCommand(
-            Guid.Empty,
-            Guid.NewGuid(),
-            new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero),
-            new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero));
-
-        await Assert.ThrowsAsync<ValidationException>(
-            async () => await handler.HandleAsync(invalidCommand));
-
-        Assert.Empty(repository.Appointments);
     }
 
     private sealed class FakeAppointmentWriteRepository

@@ -2,41 +2,36 @@ using DentalClinic.Appointments.Application.Abstractions.Messaging;
 using DentalClinic.Appointments.Application.Abstractions.Persistence;
 using DentalClinic.Appointments.Application.Features.Appointments.IntegrationEvents;
 using DentalClinic.Appointments.Domain.Appointments;
-using FluentValidation;
+using MediatR;
 
 namespace DentalClinic.Appointments.Application.Features.Appointments.Commands.ScheduleAppointment;
 
 public sealed class ScheduleAppointmentCommandHandler
-    : ICommandHandler<ScheduleAppointmentCommand, Guid>
+    : IRequestHandler<ScheduleAppointmentCommand, Guid>
 {
     private readonly IAppointmentWriteRepository _appointmentWriteRepository;
-    private readonly IValidator<ScheduleAppointmentCommand> _validator;
     private readonly IOutbox _outbox;
     private readonly IUnitOfWork _unitOfWork;
 
     public ScheduleAppointmentCommandHandler(
         IAppointmentWriteRepository appointmentWriteRepository,
-        IValidator<ScheduleAppointmentCommand> validator,
         IOutbox outbox,
         IUnitOfWork unitOfWork)
     {
         _appointmentWriteRepository = appointmentWriteRepository;
-        _validator = validator;
         _outbox = outbox;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Guid> HandleAsync(
-        ScheduleAppointmentCommand command,
-        CancellationToken cancellationToken = default)
+    public async Task<Guid> Handle(
+        ScheduleAppointmentCommand request,
+        CancellationToken cancellationToken)
     {
-        await _validator.ValidateAndThrowAsync(command, cancellationToken);
-
         var appointment = Appointment.Create(
-            command.PatientId,
-            command.DentistId,
-            command.StartsAt,
-            command.EndsAt);
+            request.PatientId,
+            request.DentistId,
+            request.StartsAt,
+            request.EndsAt);
 
         await _appointmentWriteRepository.AddAsync(
             appointment,

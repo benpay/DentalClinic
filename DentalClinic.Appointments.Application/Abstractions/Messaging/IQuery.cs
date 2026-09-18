@@ -1,5 +1,5 @@
+using MediatR;
+
 namespace DentalClinic.Appointments.Application.Abstractions.Messaging;
 
-public interface IQuery<TResult>
-{
-}
+public interface IQuery<out TResponse> : IRequest<TResponse> { }

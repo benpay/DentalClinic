@@ -6,4 +6,4 @@ public sealed record ScheduleAppointmentCommand(
     Guid PatientId,
     Guid DentistId,
     DateTimeOffset StartsAt,
-    DateTimeOffset EndsAt) : ICommand;
+    DateTimeOffset EndsAt) : ICommand<Guid>;

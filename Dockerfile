@@ -5,6 +5,9 @@ WORKDIR /src
 COPY ["DentalClinic.Appointments.Domain/DentalClinic.Appointments.Domain.csproj", "DentalClinic.Appointments.Domain/"]
 COPY ["DentalClinic.Appointments.Application/DentalClinic.Appointments.Application.csproj", "DentalClinic.Appointments.Application/"]
 COPY ["DentalClinic.Appointments.Infrastructure/DentalClinic.Appointments.Infrastructure.csproj", "DentalClinic.Appointments.Infrastructure/"]
+COPY ["DentalClinic.Appointments.Infrastructure/DentalClinic.Appointments.Infrastructure.csproj", "DentalClinic.Appointments.Infrastructure/"]
+COPY ["DentalClinic.Appointments.ReadModel/DentalClinic.Appointments.ReadModel.csproj", "DentalClinic.Appointments.ReadModel/"]
+COPY ["DentalClinic.Appointments.Api/DentalClinic.Appointments.Api.csproj", "DentalClinic.Appointments.Api/"]
 COPY ["DentalClinic.Appointments.Api/DentalClinic.Appointments.Api.csproj", "DentalClinic.Appointments.Api/"]
 
 RUN dotnet restore "DentalClinic.Appointments.Api/DentalClinic.Appointments.Api.csproj"
