@@ -27,6 +27,22 @@ public sealed class ScheduleAppointmentCommandHandler
         ScheduleAppointmentCommand request,
         CancellationToken cancellationToken)
     {
+        var hasOverlap = await _appointmentWriteRepository
+            .HasOverlappingAppointmentAsync(
+                request.DentistId,
+                request.StartsAt,
+                request.EndsAt,
+                excludedAppointmentId: null,
+                cancellationToken);
+
+        if (hasOverlap)
+        {
+            throw new AppointmentOverlapException(
+                request.DentistId,
+                request.StartsAt,
+                request.EndsAt);
+        }
+
         var appointment = Appointment.Create(
             request.PatientId,
             request.DentistId,

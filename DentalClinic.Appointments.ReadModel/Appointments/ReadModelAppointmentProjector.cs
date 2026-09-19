@@ -70,6 +70,14 @@ public sealed class ReadModelAppointmentProjector : IAppointmentProjector
                 UpdatedAtUtc = scheduled.OccurredOnUtc
             });
 
+            _logger.LogInformation(
+                "Projection scheduled for appointment {AppointmentId} " +
+                "(dentist {DentistId}, {StartsAt} - {EndsAt}).",
+                scheduled.AppointmentId,
+                scheduled.DentistId,
+                scheduled.StartsAt,
+                scheduled.EndsAt);
+
             return;
         }
 
@@ -80,6 +88,11 @@ public sealed class ReadModelAppointmentProjector : IAppointmentProjector
         projection.Status = AppointmentStatus.Scheduled;
         projection.Version += 1;
         projection.UpdatedAtUtc = scheduled.OccurredOnUtc;
+
+        _logger.LogInformation(
+            "Projection updated for appointment {AppointmentId} " +
+            "(re-scheduled event for an existing projection).",
+            scheduled.AppointmentId);
     }
 
     private async Task ApplyRescheduledAsync(
@@ -104,6 +117,13 @@ public sealed class ReadModelAppointmentProjector : IAppointmentProjector
         projection.Status = AppointmentStatus.Scheduled;
         projection.Version += 1;
         projection.UpdatedAtUtc = rescheduled.OccurredOnUtc;
+
+        _logger.LogInformation(
+            "Projection rescheduled for appointment {AppointmentId} " +
+            "({StartsAt} - {EndsAt}).",
+            rescheduled.AppointmentId,
+            rescheduled.StartsAt,
+            rescheduled.EndsAt);
     }
 
     private async Task ApplyCancelledAsync(
@@ -126,6 +146,10 @@ public sealed class ReadModelAppointmentProjector : IAppointmentProjector
         projection.Status = AppointmentStatus.Cancelled;
         projection.Version += 1;
         projection.UpdatedAtUtc = cancelled.OccurredOnUtc;
+
+        _logger.LogInformation(
+            "Projection cancelled for appointment {AppointmentId}.",
+            cancelled.AppointmentId);
     }
 
     private Task<AppointmentProjection?> FindByIdAsync(

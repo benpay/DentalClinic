@@ -25,7 +25,26 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       AzureServiceBus__ConnectionString: ${AZURE_SERVICE_BUS_CONNECTION_STRING}
       AzureServiceBus__TopicName: appointment-events
-      ConnectionStrings__ReadDatabase: Host=postgres;Database=dental_read;Username=dental;Password=dental
+      ConnectionStrings__ReadDatabase: Host=postgres;Database=${POSTGRES_DB:-dental_read};Username=${POSTGRES_USER:-dental};Password=${POSTGRES_PASSWORD:-dental}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  appointments-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      AzureServiceBus__ConnectionString: ${AZURE_SERVICE_BUS_LISTENER_CONNECTION_STRING}
+      AzureServiceBus__TopicName: appointment-events
+      AzureServiceBus__SubscriptionName: projection-appointments
+      ConnectionStrings__ReadDatabase: Host=postgres;Database=${POSTGRES_DB:-dental_read};Username=${POSTGRES_USER:-dental};Password=${POSTGRES_PASSWORD:-dental}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres_data:

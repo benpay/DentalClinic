@@ -1,18 +1,23 @@
 using Azure.Messaging.ServiceBus;
 using DentalClinic.Appointments.Infrastructure.Persistence;
+using Microsoft.Extensions.Logging;
 
 namespace DentalClinic.Appointments.Infrastructure.Messaging;
 
 public sealed class AzureServiceBusOutboxPublisher
 {
     private readonly ServiceBusSender _sender;
+    private readonly ILogger<AzureServiceBusOutboxPublisher> _logger;
 
-    public AzureServiceBusOutboxPublisher(ServiceBusSender sender)
+    public AzureServiceBusOutboxPublisher(
+        ServiceBusSender sender,
+        ILogger<AzureServiceBusOutboxPublisher> logger)
     {
         _sender = sender;
+        _logger = logger;
     }
 
-    public Task PublishAsync(
+    public async Task PublishAsync(
         OutboxMessage outboxMessage,
         CancellationToken cancellationToken = default)
     {
@@ -26,6 +31,11 @@ public sealed class AzureServiceBusOutboxPublisher
         message.ApplicationProperties["OccurredOnUtc"] =
             outboxMessage.OccurredOnUtc.ToString("O");
 
-        return _sender.SendMessageAsync(message, cancellationToken);
+        await _sender.SendMessageAsync(message, cancellationToken);
+
+        _logger.LogInformation(
+            "Sent message {MessageId} ({EventType}) to Service Bus topic.",
+            message.MessageId,
+            outboxMessage.Type);
     }
 }

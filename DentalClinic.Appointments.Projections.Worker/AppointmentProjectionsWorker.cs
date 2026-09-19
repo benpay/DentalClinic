@@ -33,10 +33,16 @@ public sealed class AppointmentProjectionsWorker : BackgroundService
             await dbContext.Database.EnsureCreatedAsync(stoppingToken);
         }
 
+        _logger.LogInformation(
+            "Read model schema ensured.");
+
         _processor.ProcessMessageAsync += ProcessMessageAsync;
         _processor.ProcessErrorAsync += ProcessErrorAsync;
 
         await _processor.StartProcessingAsync(stoppingToken);
+
+        _logger.LogInformation(
+            "Worker started and listening for projections.");
 
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
@@ -57,6 +63,13 @@ public sealed class AppointmentProjectionsWorker : BackgroundService
 
         try
         {
+            _logger.LogInformation(
+                "Message {MessageId} received (sequence {SequenceNumber}, " +
+                "enqueued {EnqueuedTime}).",
+                message.MessageId,
+                message.SequenceNumber,
+                message.EnqueuedTime);
+
             if (!message.ApplicationProperties.TryGetValue(
                     "EventType",
                     out var eventTypeValue) ||
@@ -65,6 +78,11 @@ public sealed class AppointmentProjectionsWorker : BackgroundService
                 throw new InvalidOperationException(
                     "The message does not contain a string 'EventType' property.");
             }
+
+            _logger.LogInformation(
+                "Dispatching integration event {EventType} for message {MessageId}.",
+                eventType,
+                message.MessageId);
 
             using var scope = _serviceScopeFactory.CreateScope();
 
@@ -77,6 +95,11 @@ public sealed class AppointmentProjectionsWorker : BackgroundService
             var integrationEvent = dispatcher.Deserialize(
                 eventType,
                 message.Body.ToString());
+
+            _logger.LogInformation(
+                "Projecting integration event {EventType} for message {MessageId}.",
+                eventType,
+                message.MessageId);
 
             await projector.ProjectAsync(
                 integrationEvent,

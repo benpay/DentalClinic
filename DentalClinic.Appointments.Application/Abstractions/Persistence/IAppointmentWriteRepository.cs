@@ -15,4 +15,11 @@ public interface IAppointmentWriteRepository
     Task UpdateAsync(
         Appointment appointment,
         CancellationToken cancellationToken = default);
+
+    Task<bool> HasOverlappingAppointmentAsync(
+        Guid dentistId,
+        DateTimeOffset startsAt,
+        DateTimeOffset endsAt,
+        Guid? excludedAppointmentId = null,
+        CancellationToken cancellationToken = default);
 }

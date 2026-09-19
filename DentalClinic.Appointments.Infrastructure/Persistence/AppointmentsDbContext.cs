@@ -23,6 +23,9 @@ public sealed class AppointmentsDbContext : DbContext
 
             builder.Property(appointment => appointment.Status)
                 .HasConversion<string>();
+
+            builder.Property(appointment => appointment.Version)
+                .IsConcurrencyToken();
         });
 
         modelBuilder.Entity<OutboxMessage>(builder =>

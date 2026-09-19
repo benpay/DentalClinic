@@ -20,11 +20,26 @@ builder.Services.AddScoped<IAppointmentWriteRepository, AppointmentWriteReposito
 builder.Services.AddScoped<IOutbox, EfOutbox>();
 builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
-var readConnectionString =
-    builder.Configuration["ConnectionStrings:ReadDatabase"];
+var readDataProvider =
+    builder.Configuration["ReadDataProvider"] ?? "Postgres";
 
-if (!string.IsNullOrWhiteSpace(readConnectionString))
+if (readDataProvider == "InMemory")
 {
+    builder.Services.AddReadModelInMemory();
+}
+else
+{
+    var readConnectionString =
+        builder.Configuration["ConnectionStrings:ReadDatabase"];
+
+    if (string.IsNullOrWhiteSpace(readConnectionString))
+    {
+        throw new InvalidOperationException(
+            "ConnectionStrings:ReadDatabase no está configurado. El read model se " +
+            "almacena en PostgreSQL: define la variable ConnectionStrings__ReadDatabase " +
+            "o levanta la infraestructura con 'docker compose up -d --build'.");
+    }
+
     builder.Services.AddReadModel(readConnectionString);
 }
 
@@ -34,6 +49,7 @@ builder.Services.AddMediatR(cfg =>
 builder.Services.AddValidatorsFromAssembly(
     typeof(ScheduleAppointmentCommand).Assembly);
 
+builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
 var serviceBusConnectionString =

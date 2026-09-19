@@ -94,6 +94,18 @@ public sealed class CancelAppointmentCommandHandlerTests
 
             return Task.CompletedTask;
         }
+
+        public bool HasOverlap { get; set; }
+
+        public Task<bool> HasOverlappingAppointmentAsync(
+            Guid dentistId,
+            DateTimeOffset startsAt,
+            DateTimeOffset endsAt,
+            Guid? excludedAppointmentId = null,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(HasOverlap);
+        }
     }
 
 

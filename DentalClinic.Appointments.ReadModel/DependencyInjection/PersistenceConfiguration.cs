@@ -16,9 +16,26 @@ public static class PersistenceConfiguration
         services.AddDbContext<ReadAppointmentsDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-        services.AddScoped<IAppointmentReadRepository, ReadModelAppointmentRepository>();
-        services.AddScoped<IAppointmentProjector, ReadModelAppointmentProjector>();
+        RegisterReadModelServices(services);
 
         return services;
+    }
+
+    public static IServiceCollection AddReadModelInMemory(
+        this IServiceCollection services)
+    {
+        services.AddDbContext<ReadAppointmentsDbContext>(options =>
+            options.UseInMemoryDatabase("DentalClinicAppointmentsRead"));
+
+        RegisterReadModelServices(services);
+
+        return services;
+    }
+
+    private static void RegisterReadModelServices(
+        IServiceCollection services)
+    {
+        services.AddScoped<IAppointmentReadRepository, ReadModelAppointmentRepository>();
+        services.AddScoped<IAppointmentProjector, ReadModelAppointmentProjector>();
     }
 }

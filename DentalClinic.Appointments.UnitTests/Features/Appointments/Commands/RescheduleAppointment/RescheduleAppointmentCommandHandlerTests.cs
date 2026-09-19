@@ -69,6 +69,34 @@ public sealed class RescheduleAppointmentCommandHandlerTests
                 CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Handle_WhenAnotherAppointmentOverlaps_ThrowsOverlapException()
+    {
+        var repository = new FakeAppointmentWriteRepository
+        {
+            HasOverlap = true
+        };
+        var appointment = CreateAppointment();
+        repository.Appointments.Add(appointment);
+
+        var handler = new RescheduleAppointmentCommandHandler(
+            repository,
+            new FakeOutbox(),
+            new FakeUnitOfWork());
+
+        var command = new RescheduleAppointmentCommand(
+            appointment.Id,
+            new DateTimeOffset(2026, 10, 2, 10, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 10, 2, 10, 30, 0, TimeSpan.Zero));
+
+        await Assert.ThrowsAsync<AppointmentOverlapException>(
+            async () => await handler.Handle(
+                command,
+                CancellationToken.None));
+
+        Assert.Equal(AppointmentStatus.Scheduled, appointment.Status);
+    }
+
     private static Appointment CreateAppointment()
     {
         return Appointment.Create(
@@ -111,6 +139,18 @@ public sealed class RescheduleAppointmentCommandHandlerTests
             UpdateWasCalled = true;
 
             return Task.CompletedTask;
+        }
+
+        public bool HasOverlap { get; set; }
+
+        public Task<bool> HasOverlappingAppointmentAsync(
+            Guid dentistId,
+            DateTimeOffset startsAt,
+            DateTimeOffset endsAt,
+            Guid? excludedAppointmentId = null,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(HasOverlap);
         }
     }
 

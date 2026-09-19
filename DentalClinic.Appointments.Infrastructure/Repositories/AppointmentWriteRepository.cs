@@ -38,8 +38,28 @@ public sealed class AppointmentWriteRepository
         Appointment appointment,
         CancellationToken cancellationToken = default)
     {
-        _dbContext.Appointments.Update(appointment);
+        if (_dbContext.Entry(appointment).State == EntityState.Detached)
+        {
+            _dbContext.Appointments.Update(appointment);
+        }
 
         return Task.CompletedTask;
+    }
+
+    public Task<bool> HasOverlappingAppointmentAsync(
+        Guid dentistId,
+        DateTimeOffset startsAt,
+        DateTimeOffset endsAt,
+        Guid? excludedAppointmentId,
+        CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Appointments.AnyAsync(
+            appointment =>
+                appointment.DentistId == dentistId &&
+                appointment.Status != AppointmentStatus.Cancelled &&
+                appointment.Id != excludedAppointmentId &&
+                appointment.StartsAt < endsAt &&
+                startsAt < appointment.EndsAt,
+            cancellationToken);
     }
 }

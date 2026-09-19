@@ -19,6 +19,7 @@ public sealed class Appointment
         StartsAt = startsAt;
         EndsAt = endsAt;
         Status = AppointmentStatus.Scheduled;
+        Version = 1;
     }
 
     public Guid Id { get; private set; }
@@ -32,6 +33,8 @@ public sealed class Appointment
     public DateTimeOffset EndsAt { get; private set; }
 
     public AppointmentStatus Status { get; private set; }
+
+    public int Version { get; private set; }
 
     public static Appointment Create(
         Guid patientId,
@@ -54,11 +57,13 @@ public sealed class Appointment
         StartsAt = startsAt;
         EndsAt = endsAt;
         Status = AppointmentStatus.Scheduled;
+        Version += 1;
     }
 
     public void Cancel()
     {
         Status = AppointmentStatus.Cancelled;
+        Version += 1;
     }
 
     private static void ValidateTimeRange(
@@ -70,5 +75,14 @@ public sealed class Appointment
             throw new ArgumentException(
                 "The appointment end time must be later than its start time.");
         }
+    }
+
+    public static bool TimePeriodsOverlap(
+        DateTimeOffset startsAtA,
+        DateTimeOffset endsAtA,
+        DateTimeOffset startsAtB,
+        DateTimeOffset endsAtB)
+    {
+        return startsAtA < endsAtB && startsAtB < endsAtA;
     }
 }

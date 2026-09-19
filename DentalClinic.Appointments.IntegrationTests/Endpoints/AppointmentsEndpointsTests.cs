@@ -164,6 +164,77 @@ public sealed class AppointmentsEndpointsTests
         Assert.Equal((int)AppointmentStatus.Cancelled, status);
     }
 
+    [Fact]
+    public async Task CreateAppointment_WhenOverlappingExisting_ReturnsConflict()
+    {
+        var dentistId = Guid.NewGuid();
+
+        var firstRequest = new ScheduleAppointmentRequest(
+            Guid.NewGuid(),
+            dentistId,
+            new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero));
+
+        var firstResponse = await _client.PostAsJsonAsync(
+            "/api/appointments",
+            firstRequest);
+
+        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+
+        var overlappingRequest = new ScheduleAppointmentRequest(
+            Guid.NewGuid(),
+            dentistId,
+            new DateTimeOffset(2026, 10, 1, 9, 15, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 10, 1, 9, 45, 0, TimeSpan.Zero));
+
+        var overlappingResponse = await _client.PostAsJsonAsync(
+            "/api/appointments",
+            overlappingRequest);
+
+        Assert.Equal(HttpStatusCode.Conflict, overlappingResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_WhenOverlappingExisting_ReturnsConflict()
+    {
+        var dentistId = Guid.NewGuid();
+
+        var firstRequest = new ScheduleAppointmentRequest(
+            Guid.NewGuid(),
+            dentistId,
+            new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero));
+
+        var firstResponse = await _client.PostAsJsonAsync(
+            "/api/appointments",
+            firstRequest);
+
+        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+        Assert.NotNull(firstResponse.Headers.Location);
+
+        var secondRequest = new ScheduleAppointmentRequest(
+            Guid.NewGuid(),
+            dentistId,
+            new DateTimeOffset(2026, 10, 1, 10, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 10, 1, 10, 30, 0, TimeSpan.Zero));
+
+        var secondResponse = await _client.PostAsJsonAsync(
+            "/api/appointments",
+            secondRequest);
+
+        Assert.Equal(HttpStatusCode.Created, secondResponse.StatusCode);
+
+        var rescheduleRequest = new RescheduleAppointmentRequest(
+            new DateTimeOffset(2026, 10, 1, 10, 15, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 10, 1, 10, 45, 0, TimeSpan.Zero));
+
+        var rescheduleResponse = await _client.PutAsJsonAsync(
+            $"{firstResponse.Headers.Location}/reschedule",
+            rescheduleRequest);
+
+        Assert.Equal(HttpStatusCode.Conflict, rescheduleResponse.StatusCode);
+    }
+
     private static async Task ApplyPendingProjectionsAsync(ApiFactory factory)
     {
         using var scope = factory.Services.CreateScope();

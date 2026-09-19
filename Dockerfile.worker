@@ -4,16 +4,15 @@ WORKDIR /src
 
 COPY ["DentalClinic.Appointments.Domain/DentalClinic.Appointments.Domain.csproj", "DentalClinic.Appointments.Domain/"]
 COPY ["DentalClinic.Appointments.Application/DentalClinic.Appointments.Application.csproj", "DentalClinic.Appointments.Application/"]
-COPY ["DentalClinic.Appointments.Infrastructure/DentalClinic.Appointments.Infrastructure.csproj", "DentalClinic.Appointments.Infrastructure/"]
 COPY ["DentalClinic.Appointments.ReadModel/DentalClinic.Appointments.ReadModel.csproj", "DentalClinic.Appointments.ReadModel/"]
-COPY ["DentalClinic.Appointments.Api/DentalClinic.Appointments.Api.csproj", "DentalClinic.Appointments.Api/"]
+COPY ["DentalClinic.Appointments.Projections.Worker/DentalClinic.Appointments.Projections.Worker.csproj", "DentalClinic.Appointments.Projections.Worker/"]
 
-RUN dotnet restore "DentalClinic.Appointments.Api/DentalClinic.Appointments.Api.csproj"
+RUN dotnet restore "DentalClinic.Appointments.Projections.Worker/DentalClinic.Appointments.Projections.Worker.csproj"
 
 COPY . .
-WORKDIR "/src/DentalClinic.Appointments.Api"
+WORKDIR "/src/DentalClinic.Appointments.Projections.Worker"
 
-RUN dotnet publish "DentalClinic.Appointments.Api.csproj" \
+RUN dotnet publish "DentalClinic.Appointments.Projections.Worker.csproj" \
     --configuration $BUILD_CONFIGURATION \
     --output /app/publish \
     /p:UseAppHost=false
@@ -21,10 +20,6 @@ RUN dotnet publish "DentalClinic.Appointments.Api.csproj" \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
-ENV ASPNETCORE_URLS=http://+:8080
-
-EXPOSE 8080
-
 COPY --from=build /app/publish .
 
-ENTRYPOINT ["dotnet", "DentalClinic.Appointments.Api.dll"]
+ENTRYPOINT ["dotnet", "DentalClinic.Appointments.Projections.Worker.dll"]

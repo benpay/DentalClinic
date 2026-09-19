@@ -59,13 +59,31 @@ public sealed class OutboxProcessor : BackgroundService
             .Take(20)
             .ToListAsync(cancellationToken);
 
+        if (pendingMessages.Count == 0)
+        {
+            return;
+        }
+
+        _logger.LogInformation(
+            "Outbox cycle: {PendingCount} pending message(s) to publish.",
+            pendingMessages.Count);
+
         foreach (var message in pendingMessages)
         {
             try
             {
+                _logger.LogInformation(
+                    "Publishing outbox message {OutboxMessageId} as {EventType}.",
+                    message.Id,
+                    message.Type);
+
                 await publisher.PublishAsync(message, cancellationToken);
 
                 message.MarkAsProcessed(DateTimeOffset.UtcNow);
+
+                _logger.LogInformation(
+                    "Outbox message {OutboxMessageId} published successfully.",
+                    message.Id);
             }
             catch (Exception exception)
             {

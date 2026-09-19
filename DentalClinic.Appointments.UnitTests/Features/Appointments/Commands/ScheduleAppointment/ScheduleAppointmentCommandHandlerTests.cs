@@ -1,5 +1,6 @@
 using DentalClinic.Appointments.Application.Abstractions.Messaging;
 using DentalClinic.Appointments.Application.Abstractions.Persistence;
+using DentalClinic.Appointments.Application.Features.Appointments;
 using DentalClinic.Appointments.Application.Features.Appointments.Commands.ScheduleAppointment;
 using DentalClinic.Appointments.Application.Features.Appointments.IntegrationEvents;
 using DentalClinic.Appointments.Domain.Appointments;
@@ -61,6 +62,37 @@ public sealed class ScheduleAppointmentCommandHandlerTests
         Assert.True(unitOfWork.SaveChangesWasCalled);
     }
 
+    [Fact]
+    public async Task Handle_WhenDentistHasOverlappingAppointment_ThrowsOverlapException()
+    {
+        var repository = new FakeAppointmentWriteRepository
+        {
+            HasOverlap = true
+        };
+        var outbox = new FakeOutbox();
+        var unitOfWork = new FakeUnitOfWork();
+
+        var handler = new ScheduleAppointmentCommandHandler(
+            repository,
+            outbox,
+            unitOfWork);
+
+        var command = new ScheduleAppointmentCommand(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero));
+
+        await Assert.ThrowsAsync<AppointmentOverlapException>(
+            async () => await handler.Handle(
+                command,
+                CancellationToken.None));
+
+        Assert.Empty(repository.Appointments);
+        Assert.Empty(outbox.Events);
+        Assert.False(unitOfWork.SaveChangesWasCalled);
+    }
+
     private sealed class FakeAppointmentWriteRepository
         : IAppointmentWriteRepository
     {
@@ -90,6 +122,18 @@ public sealed class ScheduleAppointmentCommandHandlerTests
             CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
+        }
+
+        public bool HasOverlap { get; set; }
+
+        public Task<bool> HasOverlappingAppointmentAsync(
+            Guid dentistId,
+            DateTimeOffset startsAt,
+            DateTimeOffset endsAt,
+            Guid? excludedAppointmentId = null,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(HasOverlap);
         }
     }
 

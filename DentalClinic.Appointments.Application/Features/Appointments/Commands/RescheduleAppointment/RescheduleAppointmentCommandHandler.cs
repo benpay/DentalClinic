@@ -36,6 +36,22 @@ public sealed class RescheduleAppointmentCommandHandler
             throw new AppointmentNotFoundException(request.AppointmentId);
         }
 
+        var hasOverlap = await _appointmentWriteRepository
+            .HasOverlappingAppointmentAsync(
+                appointment.DentistId,
+                request.StartsAt,
+                request.EndsAt,
+                excludedAppointmentId: appointment.Id,
+                cancellationToken);
+
+        if (hasOverlap)
+        {
+            throw new AppointmentOverlapException(
+                appointment.DentistId,
+                request.StartsAt,
+                request.EndsAt);
+        }
+
         appointment.Reschedule(request.StartsAt, request.EndsAt);
 
         await _appointmentWriteRepository.UpdateAsync(
