@@ -11,17 +11,21 @@ public sealed class OutboxMessage
 
     private OutboxMessage(
         Guid id,
+        Guid aggregateId,
         DateTimeOffset occurredOnUtc,
         string type,
         string content)
     {
         Id = id;
+        AggregateId = aggregateId;
         OccurredOnUtc = occurredOnUtc;
         Type = type;
         Content = content;
     }
 
     public Guid Id { get; private set; }
+
+    public Guid AggregateId { get; private set; }
 
     public DateTimeOffset OccurredOnUtc { get; private set; }
 
@@ -33,12 +37,15 @@ public sealed class OutboxMessage
 
     public string? Error { get; private set; }
 
-    public static OutboxMessage Create(IIntegrationEvent integrationEvent)
+    public static OutboxMessage Create(
+        Guid aggregateId,
+        IIntegrationEvent integrationEvent)
     {
         var eventType = integrationEvent.GetType();
 
         return new OutboxMessage(
             integrationEvent.EventId,
+            aggregateId,
             integrationEvent.OccurredOnUtc,
             eventType.AssemblyQualifiedName
                 ?? throw new InvalidOperationException(

@@ -24,10 +24,13 @@ public sealed class AzureServiceBusOutboxPublisher
         var message = new ServiceBusMessage(outboxMessage.Content)
         {
             MessageId = outboxMessage.Id.ToString(),
-            ContentType = "application/json"
+            ContentType = "application/json",
+            SessionId = outboxMessage.AggregateId.ToString()
         };
 
         message.ApplicationProperties["EventType"] = outboxMessage.Type;
+        message.ApplicationProperties["AggregateId"] =
+            outboxMessage.AggregateId.ToString();
         message.ApplicationProperties["OccurredOnUtc"] =
             outboxMessage.OccurredOnUtc.ToString("O");
 

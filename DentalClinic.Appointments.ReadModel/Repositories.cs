@@ -1,5 +1,5 @@
 ﻿using DentalClinic.Appointments.Application.Abstractions.Persistence;
-using DentalClinic.Appointments.Application.Features.Appointments.Queries.GetAppointmentById;
+using DentalClinic.Appointments.Application.Features.Appointments;
 using DentalClinic.Appointments.ReadModel.Appointments;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,5 +30,45 @@ public sealed class ReadModelAppointmentRepository
                 projection.EndsAt,
                 projection.Status))
             .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<AppointmentDetails>> GetByFilterAsync(
+        Guid? dentistId,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.AppointmentProjections
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (dentistId.HasValue)
+        {
+            query = query.Where(projection => projection.DentistId == dentistId.Value);
+        }
+
+        if (from.HasValue)
+        {
+            query = query.Where(projection => projection.StartsAt >= from.Value);
+        }
+
+        if (to.HasValue)
+        {
+            query = query.Where(projection => projection.StartsAt <= to.Value);
+        }
+
+        var projections = await query
+            .OrderBy(projection => projection.StartsAt)
+            .ToListAsync(cancellationToken);
+
+        return projections
+            .Select(projection => new AppointmentDetails(
+                projection.Id,
+                projection.PatientId,
+                projection.DentistId,
+                projection.StartsAt,
+                projection.EndsAt,
+                projection.Status))
+            .ToArray();
     }
 }

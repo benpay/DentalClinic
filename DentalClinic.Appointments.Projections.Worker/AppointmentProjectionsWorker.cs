@@ -1,20 +1,18 @@
 ﻿using Azure.Messaging.ServiceBus;
 using DentalClinic.Appointments.ReadModel.AppointmentProjectors;
-using DentalClinic.Appointments.ReadModel.Appointments;
 using DentalClinic.Appointments.ReadModel.IntegrationEvents;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DentalClinic.Appointments.Projections.Worker;
 
 public sealed class AppointmentProjectionsWorker : BackgroundService
 {
-    private readonly ServiceBusProcessor _processor;
+    private readonly ServiceBusSessionProcessor _processor;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<AppointmentProjectionsWorker> _logger;
 
     public AppointmentProjectionsWorker(
-        ServiceBusProcessor processor,
+        ServiceBusSessionProcessor processor,
         IServiceScopeFactory serviceScopeFactory,
         ILogger<AppointmentProjectionsWorker> logger)
     {
@@ -25,31 +23,20 @@ public sealed class AppointmentProjectionsWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using (var scope = _serviceScopeFactory.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider
-                .GetRequiredService<ReadAppointmentsDbContext>();
-
-            await dbContext.Database.EnsureCreatedAsync(stoppingToken);
-        }
-
-        _logger.LogInformation(
-            "Read model schema ensured.");
-
-        _processor.ProcessMessageAsync += ProcessMessageAsync;
+        _processor.ProcessMessageAsync += ProcessSessionMessageAsync;
         _processor.ProcessErrorAsync += ProcessErrorAsync;
 
         await _processor.StartProcessingAsync(stoppingToken);
 
         _logger.LogInformation(
-            "Worker started and listening for projections.");
+            "Worker started (session processor) and listening for projections.");
 
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        _processor.ProcessMessageAsync -= ProcessMessageAsync;
+        _processor.ProcessMessageAsync -= ProcessSessionMessageAsync;
         _processor.ProcessErrorAsync -= ProcessErrorAsync;
 
         await _processor.StopProcessingAsync(cancellationToken);
@@ -57,16 +44,19 @@ public sealed class AppointmentProjectionsWorker : BackgroundService
         await base.StopAsync(cancellationToken);
     }
 
-    private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
+    private async Task ProcessSessionMessageAsync(
+        ProcessSessionMessageEventArgs args)
     {
         var message = args.Message;
+        var sessionId = args.SessionId;
 
         try
         {
             _logger.LogInformation(
-                "Message {MessageId} received (sequence {SequenceNumber}, " +
+                "Message {MessageId} received (session {SessionId}, sequence {SequenceNumber}, " +
                 "enqueued {EnqueuedTime}).",
                 message.MessageId,
+                sessionId,
                 message.SequenceNumber,
                 message.EnqueuedTime);
 
@@ -118,8 +108,9 @@ public sealed class AppointmentProjectionsWorker : BackgroundService
         {
             _logger.LogError(
                 exception,
-                "Failed to process message {MessageId}.",
-                message.MessageId);
+                "Failed to process message {MessageId} (session {SessionId}).",
+                message.MessageId,
+                sessionId);
 
             await args.AbandonMessageAsync(
                 message,
@@ -132,7 +123,7 @@ public sealed class AppointmentProjectionsWorker : BackgroundService
     {
         _logger.LogError(
             args.Exception,
-            "Service Bus error while receiving: source {ErrorSource}.",
+            "Service Bus session error while receiving: source {ErrorSource}.",
             args.ErrorSource);
 
         return Task.CompletedTask;

@@ -114,7 +114,7 @@ public sealed class CancelAppointmentCommandHandlerTests
     {
         public List<IIntegrationEvent> Events { get; } = [];
 
-        public void Add(IIntegrationEvent integrationEvent)
+        public void Add(Guid aggregateId, IIntegrationEvent integrationEvent)
         {
             Events.Add(integrationEvent);
         }

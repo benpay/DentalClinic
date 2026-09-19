@@ -58,7 +58,7 @@ public sealed class RescheduleAppointmentCommandHandler
             appointment,
             cancellationToken);
 
-        _outbox.Add(new AppointmentRescheduledIntegrationEvent(
+        _outbox.Add(appointment.Id, new AppointmentRescheduledIntegrationEvent(
             Guid.NewGuid(),
             DateTimeOffset.UtcNow,
             appointment.Id,

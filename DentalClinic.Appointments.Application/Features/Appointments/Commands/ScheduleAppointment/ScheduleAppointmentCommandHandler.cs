@@ -53,7 +53,7 @@ public sealed class ScheduleAppointmentCommandHandler
             appointment,
             cancellationToken);
 
-        _outbox.Add(new AppointmentScheduledIntegrationEvent(
+        _outbox.Add(appointment.Id, new AppointmentScheduledIntegrationEvent(
             Guid.NewGuid(),
             DateTimeOffset.UtcNow,
             appointment.Id,

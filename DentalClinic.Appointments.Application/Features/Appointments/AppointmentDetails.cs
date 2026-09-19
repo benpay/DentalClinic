@@ -1,6 +1,6 @@
 using DentalClinic.Appointments.Domain.Appointments;
 
-namespace DentalClinic.Appointments.Application.Features.Appointments.Queries.GetAppointmentById;
+namespace DentalClinic.Appointments.Application.Features.Appointments;
 
 public sealed record AppointmentDetails(
     Guid Id,

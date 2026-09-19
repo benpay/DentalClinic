@@ -235,6 +235,106 @@ public sealed class AppointmentsEndpointsTests
         Assert.Equal(HttpStatusCode.Conflict, rescheduleResponse.StatusCode);
     }
 
+    [Fact]
+    public async Task GetAppointments_ForDentist_ReturnsAllOrderedByStartTime()
+    {
+        var dentistId = Guid.NewGuid();
+
+        var startTimes = new[]
+        {
+            new DateTimeOffset(2026, 10, 5, 9, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 10, 3, 9, 0, 0, TimeSpan.Zero)
+        };
+
+        foreach (var startsAt in startTimes)
+        {
+            var createResponse = await _client.PostAsJsonAsync(
+                "/api/appointments",
+                new ScheduleAppointmentRequest(
+                    Guid.NewGuid(),
+                    dentistId,
+                    startsAt,
+                    startsAt.AddMinutes(30)));
+
+            Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        }
+
+        await ApplyPendingProjectionsAsync(_factory);
+
+        var response = await _client.GetAsync(
+            $"/api/appointments?dentistId={dentistId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var document = JsonDocument.Parse(content);
+
+        var items = document.RootElement
+            .EnumerateArray()
+            .Select(item => item.GetProperty("startsAt").GetDateTimeOffset())
+            .ToArray();
+
+        Assert.Equal(3, items.Length);
+        Assert.Equal(
+            startTimes.OrderBy(time => time).ToArray(),
+            items);
+    }
+
+    [Fact]
+    public async Task GetAppointments_WhenFilteredByDentistAndRange_ReturnsOnlyMatchingAppointments()
+    {
+        var dentistA = Guid.NewGuid();
+        var dentistB = Guid.NewGuid();
+
+        await _client.PostAsJsonAsync(
+            "/api/appointments",
+            new ScheduleAppointmentRequest(
+                Guid.NewGuid(),
+                dentistA,
+                new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero)));
+
+        await _client.PostAsJsonAsync(
+            "/api/appointments",
+            new ScheduleAppointmentRequest(
+                Guid.NewGuid(),
+                dentistA,
+                new DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 10, 1, 12, 30, 0, TimeSpan.Zero)));
+
+        await _client.PostAsJsonAsync(
+            "/api/appointments",
+            new ScheduleAppointmentRequest(
+                Guid.NewGuid(),
+                dentistB,
+                new DateTimeOffset(2026, 10, 1, 11, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 10, 1, 11, 30, 0, TimeSpan.Zero)));
+
+        await ApplyPendingProjectionsAsync(_factory);
+
+        var response = await _client.GetAsync(
+            $"/api/appointments?dentistId={dentistA}" +
+            "&from=2026-10-01T10%3A00%3A00Z&to=2026-10-01T13%3A00%3A00Z");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var document = JsonDocument.Parse(content);
+
+        var items = document.RootElement
+            .EnumerateArray()
+            .ToArray();
+
+        Assert.Single(items);
+        Assert.Equal(
+            dentistA,
+            items[0].GetProperty("dentistId").GetGuid());
+        Assert.Equal(
+            new DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero),
+            items[0].GetProperty("startsAt").GetDateTimeOffset());
+    }
+
     private static async Task ApplyPendingProjectionsAsync(ApiFactory factory)
     {
         using var scope = factory.Services.CreateScope();

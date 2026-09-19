@@ -42,7 +42,7 @@ public sealed class CancelAppointmentCommandHandler
             appointment,
             cancellationToken);
 
-        _outbox.Add(new AppointmentCancelledIntegrationEvent(
+        _outbox.Add(appointment.Id, new AppointmentCancelledIntegrationEvent(
             Guid.NewGuid(),
             DateTimeOffset.UtcNow,
             appointment.Id));

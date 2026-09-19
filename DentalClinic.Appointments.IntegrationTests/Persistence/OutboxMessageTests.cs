@@ -18,7 +18,7 @@ public sealed class OutboxMessageTests
             new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero),
             new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero));
 
-        var message = OutboxMessage.Create(scheduled);
+        var message = OutboxMessage.Create(scheduled.AppointmentId, scheduled);
 
         Assert.NotNull(message.Type);
         Assert.Contains(

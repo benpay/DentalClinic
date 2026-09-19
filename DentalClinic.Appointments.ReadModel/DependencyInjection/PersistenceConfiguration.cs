@@ -37,5 +37,6 @@ public static class PersistenceConfiguration
     {
         services.AddScoped<IAppointmentReadRepository, ReadModelAppointmentRepository>();
         services.AddScoped<IAppointmentProjector, ReadModelAppointmentProjector>();
+        services.AddHostedService<ReadModelInitializer>();
     }
 }

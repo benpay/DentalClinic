@@ -11,9 +11,9 @@ public sealed class EfOutbox : IOutbox
         _dbContext = dbContext;
     }
 
-    public void Add(IIntegrationEvent integrationEvent)
+    public void Add(Guid aggregateId, IIntegrationEvent integrationEvent)
     {
-        var outboxMessage = OutboxMessage.Create(integrationEvent);
+        var outboxMessage = OutboxMessage.Create(aggregateId, integrationEvent);
 
         _dbContext.OutboxMessages.Add(outboxMessage);
     }

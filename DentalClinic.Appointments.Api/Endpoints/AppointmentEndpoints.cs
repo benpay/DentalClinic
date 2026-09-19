@@ -4,6 +4,7 @@ using DentalClinic.Appointments.Application.Features.Appointments.Commands.Cance
 using DentalClinic.Appointments.Application.Features.Appointments.Commands.RescheduleAppointment;
 using DentalClinic.Appointments.Application.Features.Appointments.Commands.ScheduleAppointment;
 using DentalClinic.Appointments.Application.Features.Appointments.Queries.GetAppointmentById;
+using DentalClinic.Appointments.Application.Features.Appointments.Queries.GetAppointments;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -26,6 +27,7 @@ public static class AppointmentEndpoints
         group.MapPost("", CreateAppointmentAsync);
         group.MapPut("/{appointmentId:guid}/reschedule", RescheduleAppointmentAsync);
         group.MapDelete("/{appointmentId:guid}", CancelAppointmentAsync);
+        group.MapGet("", GetAppointmentsAsync);
         group.MapGet("/{appointmentId:guid}", GetAppointmentByIdAsync);
 
         return endpoints;
@@ -220,6 +222,33 @@ public static class AppointmentEndpoints
             appointment.Status);
 
         return Results.Ok(appointment);
+    }
+
+    private static async Task<IResult> GetAppointmentsAsync(
+        Guid? dentistId,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        ISender sender,
+        ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken)
+    {
+        var logger = loggerFactory.CreateLogger(LoggerCategory);
+
+        logger.LogInformation(
+            "GET /api/appointments received: dentist {DentistId}, {From} - {To}.",
+            dentistId,
+            from,
+            to);
+
+        var appointments = await sender.Send(
+            new GetAppointmentsQuery(dentistId, from, to),
+            cancellationToken);
+
+        logger.LogInformation(
+            "GET /api/appointments returned {Count} appointment(s) from the read model.",
+            appointments.Count);
+
+        return Results.Ok(appointments);
     }
 
     private static IResult CreateValidationProblem(

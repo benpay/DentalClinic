@@ -31,13 +31,14 @@ builder.Services.AddSingleton(serviceProvider =>
 {
     var client = serviceProvider.GetRequiredService<ServiceBusClient>();
 
-    return client.CreateProcessor(
+    return client.CreateSessionProcessor(
         topicName,
         subscriptionName,
-        new ServiceBusProcessorOptions
+        new ServiceBusSessionProcessorOptions
         {
             AutoCompleteMessages = false,
-            MaxConcurrentCalls = 1
+            MaxConcurrentCallsPerSession = 1,
+            SessionIdleTimeout = TimeSpan.FromSeconds(30)
         });
 });
 

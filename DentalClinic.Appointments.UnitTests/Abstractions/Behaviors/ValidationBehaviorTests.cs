@@ -1,4 +1,5 @@
 using DentalClinic.Appointments.Application.Abstractions.Behaviors;
+using DentalClinic.Appointments.Application.Features.Appointments;
 using DentalClinic.Appointments.Application.Features.Appointments.Commands.ScheduleAppointment;
 using DentalClinic.Appointments.Application.Features.Appointments.Queries.GetAppointmentById;
 using FluentValidation;

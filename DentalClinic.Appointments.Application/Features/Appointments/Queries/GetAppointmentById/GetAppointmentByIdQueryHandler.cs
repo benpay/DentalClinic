@@ -1,4 +1,5 @@
 ﻿using DentalClinic.Appointments.Application.Abstractions.Persistence;
+using DentalClinic.Appointments.Application.Features.Appointments;
 using MediatR;
 
 namespace DentalClinic.Appointments.Application.Features.Appointments.Queries.GetAppointmentById;
