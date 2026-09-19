@@ -14,6 +14,14 @@ public sealed class AppointmentProjection
 
     public DateTimeOffset EndsAt { get; set; }
 
+    /// <summary>
+    /// View-oriented values denormalized from <see cref="StartsAt"/> and
+    /// <see cref="EndsAt"/> so client views do not have to parse them.
+    /// </summary>
+    public DateOnly Date { get; set; }
+
+    public int DurationMinutes { get; set; }
+
     public AppointmentStatus Status { get; set; }
 
     public long Version { get; set; }

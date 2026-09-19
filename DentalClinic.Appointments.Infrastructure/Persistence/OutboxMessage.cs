@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DentalClinic.Appointments.Application.Abstractions.Messaging;
+using DentalClinic.Appointments.Application.Features.Appointments.IntegrationEvents;
 
 namespace DentalClinic.Appointments.Infrastructure.Persistence;
 
@@ -41,16 +42,15 @@ public sealed class OutboxMessage
         Guid aggregateId,
         IIntegrationEvent integrationEvent)
     {
-        var eventType = integrationEvent.GetType();
+        var typeName = IntegrationEventTypeMap.GetNameFor(
+            integrationEvent.GetType());
 
         return new OutboxMessage(
             integrationEvent.EventId,
             aggregateId,
             integrationEvent.OccurredOnUtc,
-            eventType.AssemblyQualifiedName
-                ?? throw new InvalidOperationException(
-                    "The integration event type could not be resolved."),
-            JsonSerializer.Serialize(integrationEvent, eventType));
+            typeName,
+            JsonSerializer.Serialize(integrationEvent, integrationEvent.GetType()));
     }
 
     public void MarkAsProcessed(DateTimeOffset processedOnUtc)

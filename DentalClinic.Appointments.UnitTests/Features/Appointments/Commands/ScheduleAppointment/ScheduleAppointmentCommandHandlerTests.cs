@@ -137,8 +137,6 @@ public sealed class ScheduleAppointmentCommandHandlerTests
         }
     }
 
-
-
     private sealed class FakeOutbox : IOutbox
     {
         public List<IIntegrationEvent> Events { get; } = [];

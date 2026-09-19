@@ -21,8 +21,8 @@ public sealed class OutboxMessageTests
         var message = OutboxMessage.Create(scheduled.AppointmentId, scheduled);
 
         Assert.NotNull(message.Type);
-        Assert.Contains(
-            typeof(AppointmentScheduledIntegrationEvent).FullName!,
+        Assert.Equal(
+            IntegrationEventTypeName.AppointmentScheduled,
             message.Type);
         Assert.NotEmpty(message.Content);
 

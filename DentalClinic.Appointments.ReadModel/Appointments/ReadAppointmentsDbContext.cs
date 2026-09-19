@@ -1,4 +1,5 @@
 ﻿using DentalClinic.Appointments.ReadModel.Appointments;
+using DentalClinic.Appointments.ReadModel.Inbox;
 using Microsoft.EntityFrameworkCore;
 
 namespace DentalClinic.Appointments.ReadModel.Appointments;
@@ -13,6 +14,9 @@ public sealed class ReadAppointmentsDbContext : DbContext
 
     public DbSet<AppointmentProjection> AppointmentProjections
         => Set<AppointmentProjection>();
+
+    public DbSet<InboxMessage> InboxMessages
+        => Set<InboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,6 +38,12 @@ public sealed class ReadAppointmentsDbContext : DbContext
             builder.Property(projection => projection.EndsAt)
                 .IsRequired();
 
+            builder.Property(projection => projection.Date)
+                .IsRequired();
+
+            builder.Property(projection => projection.DurationMinutes)
+                .IsRequired();
+
             builder.Property(projection => projection.Status)
                 .HasConversion<string>()
                 .HasMaxLength(32)
@@ -45,9 +55,19 @@ public sealed class ReadAppointmentsDbContext : DbContext
             builder.Property(projection => projection.UpdatedAtUtc)
                 .IsRequired();
 
-            builder.HasIndex(projection => projection.DentistId);
+            builder.HasIndex(projection => new { projection.DentistId, projection.Date });
 
             builder.HasIndex(projection => projection.StartsAt);
+        });
+
+        modelBuilder.Entity<InboxMessage>(builder =>
+        {
+            builder.ToTable("processed_integration_messages");
+
+            builder.HasKey(message => message.EventId);
+
+            builder.Property(message => message.ProcessedOnUtc)
+                .IsRequired();
         });
     }
 }

@@ -52,6 +52,10 @@ public sealed class ReadModelAppointmentProjectorTests
         Assert.Equal(scheduled.StartsAt, projection.StartsAt);
         Assert.Equal(scheduled.EndsAt, projection.EndsAt);
         Assert.Equal(AppointmentStatus.Scheduled, projection.Status);
+        Assert.Equal(
+            DateOnly.FromDateTime(scheduled.StartsAt.UtcDateTime),
+            projection.Date);
+        Assert.Equal(30, projection.DurationMinutes);
         Assert.Equal(1, projection.Version);
     }
 
@@ -132,6 +136,10 @@ public sealed class ReadModelAppointmentProjectorTests
         Assert.NotNull(projection);
         Assert.Equal(newStartsAt, projection.StartsAt);
         Assert.Equal(newEndsAt, projection.EndsAt);
+        Assert.Equal(
+            DateOnly.FromDateTime(newStartsAt.UtcDateTime),
+            projection.Date);
+        Assert.Equal(30, projection.DurationMinutes);
         Assert.Equal(2, projection.Version);
     }
 

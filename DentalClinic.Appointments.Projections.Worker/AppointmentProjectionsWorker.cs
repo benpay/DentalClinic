@@ -1,5 +1,6 @@
 ﻿using Azure.Messaging.ServiceBus;
 using DentalClinic.Appointments.ReadModel.AppointmentProjectors;
+using DentalClinic.Appointments.ReadModel.Inbox;
 using DentalClinic.Appointments.ReadModel.IntegrationEvents;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -82,9 +83,28 @@ public sealed class AppointmentProjectionsWorker : BackgroundService
             var projector = scope.ServiceProvider
                 .GetRequiredService<IAppointmentProjector>();
 
+            var inbox = scope.ServiceProvider
+                .GetRequiredService<IInbox>();
+
             var integrationEvent = dispatcher.Deserialize(
                 eventType,
                 message.Body.ToString());
+
+            if (await inbox.HasProcessedAsync(
+                    integrationEvent.EventId,
+                    args.CancellationToken))
+            {
+                _logger.LogInformation(
+                    "Message {MessageId} ({EventType}) is a duplicate; skipping.",
+                    message.MessageId,
+                    eventType);
+
+                await args.CompleteMessageAsync(
+                    message,
+                    args.CancellationToken);
+
+                return;
+            }
 
             _logger.LogInformation(
                 "Projecting integration event {EventType} for message {MessageId}.",
@@ -93,6 +113,10 @@ public sealed class AppointmentProjectionsWorker : BackgroundService
 
             await projector.ProjectAsync(
                 integrationEvent,
+                args.CancellationToken);
+
+            await inbox.RecordProcessedAsync(
+                integrationEvent.EventId,
                 args.CancellationToken);
 
             await args.CompleteMessageAsync(

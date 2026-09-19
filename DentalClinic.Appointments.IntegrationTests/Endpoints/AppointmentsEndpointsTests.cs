@@ -271,6 +271,7 @@ public sealed class AppointmentsEndpointsTests
         using var document = JsonDocument.Parse(content);
 
         var items = document.RootElement
+            .GetProperty("items")
             .EnumerateArray()
             .Select(item => item.GetProperty("startsAt").GetDateTimeOffset())
             .ToArray();
@@ -323,6 +324,7 @@ public sealed class AppointmentsEndpointsTests
         using var document = JsonDocument.Parse(content);
 
         var items = document.RootElement
+            .GetProperty("items")
             .EnumerateArray()
             .ToArray();
 
@@ -333,6 +335,58 @@ public sealed class AppointmentsEndpointsTests
         Assert.Equal(
             new DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero),
             items[0].GetProperty("startsAt").GetDateTimeOffset());
+    }
+
+    [Fact]
+    public async Task GetAppointments_WhenPaginated_ReturnsPageMetadata()
+    {
+        var dentistId = Guid.NewGuid();
+
+        for (var i = 0; i < 3; i++)
+        {
+            var startsAt = new DateTimeOffset(
+                2026, 10, 1, 9 + i, 0, 0, TimeSpan.Zero);
+
+            var createResponse = await _client.PostAsJsonAsync(
+                "/api/appointments",
+                new ScheduleAppointmentRequest(
+                    Guid.NewGuid(),
+                    dentistId,
+                    startsAt,
+                    startsAt.AddMinutes(30)));
+
+            Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        }
+
+        await ApplyPendingProjectionsAsync(_factory);
+
+        var firstPageResponse = await _client.GetAsync(
+            $"/api/appointments?dentistId={dentistId}&page=1&pageSize=2");
+
+        Assert.Equal(HttpStatusCode.OK, firstPageResponse.StatusCode);
+
+        var firstPageContent = await firstPageResponse.Content.ReadAsStringAsync();
+        using var firstPageDocument = JsonDocument.Parse(firstPageContent);
+
+        var firstPageRoot = firstPageDocument.RootElement;
+
+        Assert.Equal(2, firstPageRoot.GetProperty("items").GetArrayLength());
+        Assert.Equal(1, firstPageRoot.GetProperty("page").GetInt32());
+        Assert.Equal(2, firstPageRoot.GetProperty("pageSize").GetInt32());
+        Assert.Equal(3, firstPageRoot.GetProperty("totalCount").GetInt32());
+        Assert.True(firstPageRoot.GetProperty("hasNextPage").GetBoolean());
+
+        var secondPageResponse = await _client.GetAsync(
+            $"/api/appointments?dentistId={dentistId}&page=2&pageSize=2");
+
+        var secondPageContent = await secondPageResponse.Content.ReadAsStringAsync();
+        using var secondPageDocument = JsonDocument.Parse(secondPageContent);
+
+        var secondPageRoot = secondPageDocument.RootElement;
+
+        Assert.Equal(1, secondPageRoot.GetProperty("items").GetArrayLength());
+        Assert.Equal(2, secondPageRoot.GetProperty("page").GetInt32());
+        Assert.False(secondPageRoot.GetProperty("hasNextPage").GetBoolean());
     }
 
     private static async Task ApplyPendingProjectionsAsync(ApiFactory factory)

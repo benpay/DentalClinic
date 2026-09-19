@@ -1,3 +1,4 @@
+using DentalClinic.Appointments.Application.Abstractions;
 using DentalClinic.Appointments.Application.Abstractions.Persistence;
 using DentalClinic.Appointments.Application.Features.Appointments;
 using MediatR;
@@ -5,7 +6,7 @@ using MediatR;
 namespace DentalClinic.Appointments.Application.Features.Appointments.Queries.GetAppointments;
 
 public sealed class GetAppointmentsQueryHandler
-    : IRequestHandler<GetAppointmentsQuery, IReadOnlyList<AppointmentDetails>>
+    : IRequestHandler<GetAppointmentsQuery, PagedResult<AppointmentDetails>>
 {
     private readonly IAppointmentReadRepository _appointmentReadRepository;
 
@@ -15,7 +16,7 @@ public sealed class GetAppointmentsQueryHandler
         _appointmentReadRepository = appointmentReadRepository;
     }
 
-    public Task<IReadOnlyList<AppointmentDetails>> Handle(
+    public Task<PagedResult<AppointmentDetails>> Handle(
         GetAppointmentsQuery request,
         CancellationToken cancellationToken)
     {
@@ -23,6 +24,8 @@ public sealed class GetAppointmentsQueryHandler
             request.DentistId,
             request.From,
             request.To,
+            request.Page,
+            request.PageSize,
             cancellationToken);
     }
 }

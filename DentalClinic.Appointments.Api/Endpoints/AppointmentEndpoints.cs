@@ -228,27 +228,49 @@ public static class AppointmentEndpoints
         Guid? dentistId,
         DateTimeOffset? from,
         DateTimeOffset? to,
+        int? page,
+        int? pageSize,
         ISender sender,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger(LoggerCategory);
 
+        var normalizedPage = Math.Max(page ?? 1, 1);
+        var normalizedPageSize =
+            pageSize is null or < 1 ? 20 : Math.Min(pageSize.Value, 100);
+
         logger.LogInformation(
-            "GET /api/appointments received: dentist {DentistId}, {From} - {To}.",
+            "GET /api/appointments received: dentist {DentistId}, {From} - {To}, " +
+            "page {Page}, pageSize {PageSize}.",
             dentistId,
             from,
-            to);
+            to,
+            normalizedPage,
+            normalizedPageSize);
 
-        var appointments = await sender.Send(
-            new GetAppointmentsQuery(dentistId, from, to),
+        var result = await sender.Send(
+            new GetAppointmentsQuery(
+                dentistId,
+                from,
+                to,
+                normalizedPage,
+                normalizedPageSize),
             cancellationToken);
 
         logger.LogInformation(
-            "GET /api/appointments returned {Count} appointment(s) from the read model.",
-            appointments.Count);
+            "GET /api/appointments returned {Count} appointment(s) " +
+            "(page {Page} of {PageCount}).",
+            result.Items.Count,
+            result.Page,
+            result.TotalCount);
 
-        return Results.Ok(appointments);
+        return Results.Ok(new AppointmentListResponse(
+            result.Page,
+            result.PageSize,
+            result.TotalCount,
+            result.HasNextPage,
+            result.Items));
     }
 
     private static IResult CreateValidationProblem(

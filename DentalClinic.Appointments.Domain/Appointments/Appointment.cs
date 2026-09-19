@@ -77,12 +77,4 @@ public sealed class Appointment
         }
     }
 
-    public static bool TimePeriodsOverlap(
-        DateTimeOffset startsAtA,
-        DateTimeOffset endsAtA,
-        DateTimeOffset startsAtB,
-        DateTimeOffset endsAtB)
-    {
-        return startsAtA < endsAtB && startsAtB < endsAtA;
     }
-}

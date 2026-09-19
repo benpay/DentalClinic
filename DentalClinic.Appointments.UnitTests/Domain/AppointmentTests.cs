@@ -73,37 +73,6 @@ public sealed class AppointmentTests
         Assert.Equal(2, appointment.Version);
     }
 
-    [Theory]
-    [InlineData(9, 15, 9, 45, true)]
-    [InlineData(9, 0, 9, 30, true)]
-    [InlineData(8, 0, 10, 0, true)]
-    [InlineData(9, 30, 10, 0, false)]
-    [InlineData(10, 0, 10, 30, false)]
-    [InlineData(9, 30, 9, 45, false)]
-    public void TimePeriodsOverlap_EvaluatesRangeOverlap(
-        int startHourB,
-        int startMinuteB,
-        int endHourB,
-        int endMinuteB,
-        bool expected)
-    {
-        var startsAt = new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero);
-        var endsAt = new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero);
-
-        var otherStartsAt = new DateTimeOffset(
-            2026, 10, 1, startHourB, startMinuteB, 0, TimeSpan.Zero);
-        var otherEndsAt = new DateTimeOffset(
-            2026, 10, 1, endHourB, endMinuteB, 0, TimeSpan.Zero);
-
-        var overlaps = Appointment.TimePeriodsOverlap(
-            startsAt,
-            endsAt,
-            otherStartsAt,
-            otherEndsAt);
-
-        Assert.Equal(expected, overlaps);
-    }
-
     [Fact]
     public void Cancel_ChangesStatusToCancelled()
     {

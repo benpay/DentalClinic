@@ -21,7 +21,7 @@ public sealed class IntegrationEventDispatcherTests
             new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero));
 
         var expectedTypeName =
-            typeof(AppointmentScheduledIntegrationEvent).AssemblyQualifiedName!;
+            IntegrationEventTypeName.AppointmentScheduled;
 
         var json = JsonSerializer.Serialize(
             scheduled,

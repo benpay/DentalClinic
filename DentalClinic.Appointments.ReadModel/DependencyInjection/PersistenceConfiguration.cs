@@ -1,6 +1,7 @@
 ﻿using DentalClinic.Appointments.Application.Abstractions.Persistence;
 using DentalClinic.Appointments.ReadModel.AppointmentProjectors;
 using DentalClinic.Appointments.ReadModel.Appointments;
+using DentalClinic.Appointments.ReadModel.Inbox;
 using DentalClinic.Appointments.ReadModel.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +38,7 @@ public static class PersistenceConfiguration
     {
         services.AddScoped<IAppointmentReadRepository, ReadModelAppointmentRepository>();
         services.AddScoped<IAppointmentProjector, ReadModelAppointmentProjector>();
+        services.AddScoped<IInbox, EfInbox>();
         services.AddHostedService<ReadModelInitializer>();
     }
 }

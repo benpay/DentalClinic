@@ -72,8 +72,6 @@ if (!string.IsNullOrWhiteSpace(serviceBusConnectionString) &&
 
 var app = builder.Build();
 
-app.UseHttpsRedirection();
-
 app.MapAppointmentEndpoints();
 
 app.Run();

@@ -22,12 +22,15 @@ public interface IAppointmentReadRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns the projections matching the supplied filters, ordered by start time.
-    /// All filters are optional; <c>From</c>/<c>To</c> bound <see cref="AppointmentDetails.StartsAt"/>.
+    /// Returns a page of projections matching the supplied filters, ordered by
+    /// start time. All filters are optional; <c>From</c>/<c>To</c> bound
+    /// <see cref="AppointmentDetails.StartsAt"/>.
     /// </summary>
-    Task<IReadOnlyList<AppointmentDetails>> GetByFilterAsync(
+    Task<PagedResult<AppointmentDetails>> GetByFilterAsync(
         Guid? dentistId,
         DateTimeOffset? from,
         DateTimeOffset? to,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken = default);
 }

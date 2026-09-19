@@ -58,7 +58,7 @@ public sealed class ReadModelAppointmentProjector : IAppointmentProjector
 
         if (projection is null)
         {
-            _dbContext.AppointmentProjections.Add(new AppointmentProjection
+            var created = new AppointmentProjection
             {
                 Id = scheduled.AppointmentId,
                 PatientId = scheduled.PatientId,
@@ -68,7 +68,11 @@ public sealed class ReadModelAppointmentProjector : IAppointmentProjector
                 Status = AppointmentStatus.Scheduled,
                 Version = 1,
                 UpdatedAtUtc = scheduled.OccurredOnUtc
-            });
+            };
+
+            ApplyViewFields(created, scheduled.StartsAt, scheduled.EndsAt);
+
+            _dbContext.AppointmentProjections.Add(created);
 
             _logger.LogInformation(
                 "Projection scheduled for appointment {AppointmentId} " +
@@ -88,6 +92,8 @@ public sealed class ReadModelAppointmentProjector : IAppointmentProjector
         projection.Status = AppointmentStatus.Scheduled;
         projection.Version += 1;
         projection.UpdatedAtUtc = scheduled.OccurredOnUtc;
+
+        ApplyViewFields(projection, scheduled.StartsAt, scheduled.EndsAt);
 
         _logger.LogInformation(
             "Projection updated for appointment {AppointmentId} " +
@@ -117,6 +123,8 @@ public sealed class ReadModelAppointmentProjector : IAppointmentProjector
         projection.Status = AppointmentStatus.Scheduled;
         projection.Version += 1;
         projection.UpdatedAtUtc = rescheduled.OccurredOnUtc;
+
+        ApplyViewFields(projection, rescheduled.StartsAt, rescheduled.EndsAt);
 
         _logger.LogInformation(
             "Projection rescheduled for appointment {AppointmentId} " +
@@ -150,6 +158,15 @@ public sealed class ReadModelAppointmentProjector : IAppointmentProjector
         _logger.LogInformation(
             "Projection cancelled for appointment {AppointmentId}.",
             cancelled.AppointmentId);
+    }
+
+    private static void ApplyViewFields(
+        AppointmentProjection projection,
+        DateTimeOffset startsAt,
+        DateTimeOffset endsAt)
+    {
+        projection.Date = DateOnly.FromDateTime(startsAt.UtcDateTime);
+        projection.DurationMinutes = (int)Math.Round((endsAt - startsAt).TotalMinutes);
     }
 
     private Task<AppointmentProjection?> FindByIdAsync(

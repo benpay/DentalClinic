@@ -8,4 +8,6 @@ public sealed record AppointmentDetails(
     Guid DentistId,
     DateTimeOffset StartsAt,
     DateTimeOffset EndsAt,
-    AppointmentStatus Status);
+    AppointmentStatus Status,
+    DateOnly Date,
+    int DurationMinutes);

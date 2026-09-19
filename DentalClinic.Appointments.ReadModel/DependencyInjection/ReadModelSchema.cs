@@ -34,8 +34,8 @@ public static class ReadModelSchema
 
                 return;
             }
-            catch (NpgsqlException exception)
-                when (exception is PostgresException { SqlState: "42P07" or "42710" })
+            catch (PostgresException exception)
+                when (exception.SqlState is "42P07" or "42710")
             {
                 // 42P07 = duplicate_table, 42710 = duplicate_object.
                 // Another process already created the schema concurrently.

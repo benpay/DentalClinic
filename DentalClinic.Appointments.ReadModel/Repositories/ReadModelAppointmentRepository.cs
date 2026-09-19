@@ -1,4 +1,5 @@
-﻿using DentalClinic.Appointments.Application.Abstractions.Persistence;
+﻿using DentalClinic.Appointments.Application.Abstractions;
+using DentalClinic.Appointments.Application.Abstractions.Persistence;
 using DentalClinic.Appointments.Application.Features.Appointments;
 using DentalClinic.Appointments.ReadModel.Appointments;
 using Microsoft.EntityFrameworkCore;
@@ -28,16 +29,23 @@ public sealed class ReadModelAppointmentRepository
                 projection.DentistId,
                 projection.StartsAt,
                 projection.EndsAt,
-                projection.Status))
+                projection.Status,
+                projection.Date,
+                projection.DurationMinutes))
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<AppointmentDetails>> GetByFilterAsync(
+    public async Task<PagedResult<AppointmentDetails>> GetByFilterAsync(
         Guid? dentistId,
         DateTimeOffset? from,
         DateTimeOffset? to,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken = default)
     {
+        var normalizedPage = Math.Max(page, 1);
+        var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
+
         var query = _dbContext.AppointmentProjections
             .AsNoTracking()
             .AsQueryable();
@@ -57,18 +65,27 @@ public sealed class ReadModelAppointmentRepository
             query = query.Where(projection => projection.StartsAt <= to.Value);
         }
 
-        var projections = await query
-            .OrderBy(projection => projection.StartsAt)
-            .ToListAsync(cancellationToken);
+        var totalCount = await query.CountAsync(cancellationToken);
 
-        return projections
+        var items = await query
+            .OrderBy(projection => projection.StartsAt)
+            .Skip((normalizedPage - 1) * normalizedPageSize)
+            .Take(normalizedPageSize)
             .Select(projection => new AppointmentDetails(
                 projection.Id,
                 projection.PatientId,
                 projection.DentistId,
                 projection.StartsAt,
                 projection.EndsAt,
-                projection.Status))
-            .ToArray();
+                projection.Status,
+                projection.Date,
+                projection.DurationMinutes))
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<AppointmentDetails>(
+            normalizedPage,
+            normalizedPageSize,
+            totalCount,
+            items);
     }
 }

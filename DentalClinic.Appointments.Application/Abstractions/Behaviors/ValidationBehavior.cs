@@ -33,7 +33,6 @@ public sealed class ValidationBehavior<TRequest, TResponse>
 
         var failures = results
             .SelectMany(result => result.Errors)
-            .Where(failure => failure is not null)
             .ToList();
 
         if (failures.Count != 0)
